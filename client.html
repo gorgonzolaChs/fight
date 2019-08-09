@@ -1,0 +1,99 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
+<script src="client-display.js"></script>
+<script src="client-movement.js"></script>
+<script src="client-utility.js"></script>
+<link rel="stylesheet" type="text/css" href="client-style.css">
+<script>
+    var nameSubmitted = false;
+    var myPlayerID = 0;
+    var colorChosen;
+    //var socket = io('http://165.227.85.99:8100/');
+    var socket = io();
+
+    // Server --> Client
+
+    socket.on('recieveChat', function(data){                // Get Chat
+        console.log("recieved:" + data.chat);
+        var node = document.createElement("LI");                // Create a <li> node
+        var textnode = document.createTextNode(data.chat);      // Create a text node
+        node.appendChild(textnode);                             // Append the text to <li>
+        document.getElementById("myList").insertBefore(node, document.getElementById("myList").childNodes[0]);    // Append <li> to <ul> with id="myList"
+    });
+    socket.on('setId', function (data) {                    // Get My Player ID
+        //console.log(data);
+        myPlayerID = data.id;
+    });
+    var gameMap;
+    socket.on('loadMap', function(data){                    // Load Game Map
+        gameMap = data;
+        for(var key in data){
+            drawMap(data[key]);
+        }
+    });
+    socket.on('updateState', function (data) {              // Get Player States
+        var canvas = document.getElementById("arena");
+        var ct = canvas.getContext("2d");
+        ct.clearRect(0, 0, canvas.width, canvas.height);
+        for(var key in gameMap){
+            drawMap(gameMap[key]);
+        }
+        //console.log(data);
+        for(var key in data){
+            drawPlayer(data[key], key);
+        }
+    });
+
+    // Client --> Server
+
+    function submitChat(){      // Send Chat
+        socket.emit('sendChat', {'chat':document.getElementById("chat").value})
+        document.getElementById("chat").value = "";
+    }
+    function submitName(){      // Send Name and Lock Input Field/Button
+        socket.emit('setName', {'name':document.getElementById("input").value})
+        document.getElementById("input").value = "";
+        document.getElementById("input").disabled = true;
+        document.getElementById("inputB").disabled = true;
+        document.getElementById("chat").disabled = false;
+        document.getElementById("inputB2").disabled = false;
+        nameSubmitted=true;
+    }
+
+    // TEST
+    function testPlayer(){
+        player = {'x': 50, 'y': 50, 'name': "Jim"};
+        drawPlayer(player);
+    }
+</script>
+
+
+<div class="div1">
+    <div>Please Enter Your Name : </div>
+    <textarea   rows="1" 
+                id="input"></textarea>
+    <button     class="button button1" 
+                id="inputB" 
+                onclick="submitName()">Set Name</button>
+    <div>CHAT :</div>
+    <textarea   disabled="true" 
+                rows="1" 
+                id="chat" 
+                style="border: 1px solid black" ></textarea>
+    <button     class="button button2" 
+                disabled="true" 
+                id="inputB2" 
+                onclick="submitChat()">Send Message</button>
+    <lu id="myList"></lu>
+</div>
+<div id="canvas-container">
+    <canvas id="arena" 
+            width=800 
+            height=800 
+            style="border: 1px solid black"></canvas> 
+</div>
+<title>IT'S A GAME</title>
+
+
+
+
+
